@@ -17,7 +17,7 @@ function Stars({ rating }: { rating: number }) {
 }
 
 export function MovieCard({ movie }: { movie: Movie }) {
-  const cardRef = useRef<HTMLDivElement>(null)
+  const cardRef = useRef<HTMLAnchorElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
 
@@ -54,9 +54,12 @@ export function MovieCard({ movie }: { movie: Movie }) {
   }, [visible, recompute])
 
   return (
-    <div
+    <a
       className="card"
       ref={cardRef}
+      href={movie.uri}
+      target="_blank"
+      rel="noopener noreferrer"
       onMouseEnter={() => setVisible(true)}
       onMouseLeave={() => setVisible(false)}
     >
@@ -86,6 +89,6 @@ export function MovieCard({ movie }: { movie: Movie }) {
           </div>,
           document.body,
         )}
-    </div>
+    </a>
   )
 }

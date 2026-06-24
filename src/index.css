@@ -268,9 +268,13 @@ body {
 
 .card {
   position: relative;
+  display: block;
   flex: 0 0 auto;
   width: 120px;
   scroll-snap-align: start;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
 }
 
 /* Lift the hovered card so its tooltip sits above adjacent cards and rows. */
