@@ -212,6 +212,122 @@ body {
   border-color: var(--accent);
 }
 
+/* ---------- Histogram ---------- */
+
+.histogram {
+  overflow-x: auto;
+  margin-bottom: 24px;
+  padding: 8px 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #3a4552 transparent;
+}
+
+.histogram::-webkit-scrollbar {
+  height: 8px;
+}
+
+.histogram::-webkit-scrollbar-thumb {
+  background: #3a4552;
+  border-radius: 999px;
+}
+
+.hist-track {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  width: max-content;
+  /* Center when narrower than the page; auto margins collapse to 0 and it
+     scrolls normally when the bars overflow. */
+  margin: 0 auto;
+}
+
+/* Full-height hit area so even empty/short years are easy to hover and click. */
+.hist-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 9px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+/* Decades are few and every bar is labelled, so give them wider columns
+   and more spacing to keep the rotated labels from colliding. */
+.histogram.is-decade .hist-track {
+  gap: 10px;
+}
+
+.histogram.is-decade .hist-col {
+  width: 72px;
+}
+
+.hist-bar-area {
+  height: 150px;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.hist-bar {
+  width: 100%;
+  min-height: 2px; /* baseline stub so empty years stay visible + hoverable */
+  background: #3f4b5b;
+  border-radius: 2px 2px 0 0;
+  transition: background 0.1s;
+}
+
+.hist-col:hover .hist-bar {
+  background: var(--green);
+}
+
+/* Axis area below the bars; holds decade ticks + rotated year labels.
+   Top padding keeps the ticks clear of the bars above. */
+.hist-axis {
+  position: relative;
+  height: 52px;
+  width: 100%;
+  padding-top: 8px;
+}
+
+.hist-tick-label {
+  position: absolute;
+  top: 18px;
+  left: 100%;
+  transform: translateX(-50%) rotate(90deg);
+  transform-origin: top center;
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.hist-tooltip {
+  position: fixed;
+  width: max-content;
+  background: #0e1217;
+  border: 1px solid #2a323c;
+  border-radius: var(--radius);
+  padding: 6px 9px;
+  text-align: center;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  animation: tooltip-in 0.12s ease-out;
+}
+
+.hist-tooltip-year {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.hist-tooltip-count {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
 /* ---------- Year rows ---------- */
 
 .rows {

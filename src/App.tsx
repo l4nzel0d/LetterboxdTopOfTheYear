@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Histogram } from './components/Histogram'
 import { UploadScreen } from './components/UploadScreen'
 import { YearRow } from './components/YearRow'
 import { buildMovies } from './lib/csv'
@@ -102,6 +103,8 @@ export default function App() {
           onChange={(e) => handleKeyChange(e.target.value)}
         />
       </header>
+
+      <Histogram groups={groups} mode={mode} />
 
       <main className="rows">
         {groups.map((group) => (
