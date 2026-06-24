@@ -1,0 +1,6 @@
+I wanna build a web-app. It should prompt user to upload two csv files @data/ratings.csv and @data/watched.csv and then display a page that  
+  for each year (or each decade if toggled) displays movie cards sorted from the highest user rating to the lowest (or none rating). The app   
+  should be in style of Letterboxd website whose page i have saved as @refs/LetterboxdPage.png . The movie cards should be in a     
+  scroller (swiper). When hovered movie card should be outlined (inside) and small box should appear to the top of it with movie's name, year  
+  and user's rating (if any) on the second line. The mocked up how the page should look in @refs/ByYear.png . First of all let's think what    
+  tech stack would we use, explain each option and which one you would suggest
