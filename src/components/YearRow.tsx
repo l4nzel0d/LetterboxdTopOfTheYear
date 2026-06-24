@@ -20,7 +20,12 @@ export function YearRow({ group }: { group: MovieGroup }) {
 
   return (
     <section className="year-row" id={`group-${group.key}`}>
-      <div className="year-label">{group.label}</div>
+      <div className="year-head">
+        <div className="year-label">{group.label}</div>
+        <div className="year-count">
+          {group.movies.length} {group.movies.length === 1 ? 'film' : 'films'}
+        </div>
+      </div>
       {group.movies.length === 0 ? (
         <div className="year-empty">No movies to show here yet</div>
       ) : (

@@ -354,6 +354,15 @@ body {
   padding-right: 16px;
 }
 
+.year-count {
+  text-align: right;
+  padding-right: 16px;
+  margin-top: 2px;
+  color: var(--text-dim);
+  font-size: 13px;
+  user-select: none;
+}
+
 .year-empty {
   color: var(--text-dim);
   font-size: 15px;
