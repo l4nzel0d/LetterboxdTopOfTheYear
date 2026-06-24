@@ -6,7 +6,7 @@ export function YearRow({ group }: { group: MovieGroup }) {
     <section className="year-row">
       <div className="year-label">{group.label}</div>
       {group.movies.length === 0 ? (
-        <div className="year-empty">No movies to show yet</div>
+        <div className="year-empty">No movies to show here yet</div>
       ) : (
         <div className="swiper">
           {group.movies.map((movie) => (
