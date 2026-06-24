@@ -17,7 +17,8 @@ export function UploadScreen({ onSubmit }: Props) {
       <div className="upload-card">
         <h1>Top of the Year</h1>
         <p className="upload-sub">
-          Upload your Letterboxd exports to see your films ranked by year.
+          Upload your Letterboxd exports to browse every film you've watched,
+          grouped by year or decade and sorted by your rating within each group.
         </p>
 
         <div className="upload-fields">
