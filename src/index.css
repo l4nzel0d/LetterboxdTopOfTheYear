@@ -231,7 +231,7 @@ body {
   gap: 14px;
   overflow-x: auto;
   scroll-snap-type: x proximity;
-  padding: 28px 4px 8px; /* top padding leaves room for the tooltip */
+  padding: 8px 4px 12px;
   scrollbar-width: thin;
   scrollbar-color: #3a4552 transparent;
 }
@@ -252,6 +252,11 @@ body {
   flex: 0 0 auto;
   width: 120px;
   scroll-snap-align: start;
+}
+
+/* Lift the hovered card so its tooltip sits above adjacent cards and rows. */
+.card:hover {
+  z-index: 10;
 }
 
 .card-poster {
@@ -296,30 +301,30 @@ body {
   opacity: 1;
 }
 
-/* ---------- Hover tooltip ---------- */
+/* ---------- Hover tooltip (portalled to body, position driven by JS) ---------- */
 
 .card-tooltip {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%) translateY(4px);
-  min-width: 140px;
-  max-width: 200px;
+  position: fixed;
+  /* Shrink to fit the text (the 10px side padding is the only extra width),
+     but wrap rather than overflow once a title gets long or hits the edge. */
+  width: max-content;
+  max-width: min(260px, calc(100vw - 16px));
   background: #0e1217;
   border: 1px solid #2a323c;
   border-radius: var(--radius);
   padding: 8px 10px;
   text-align: center;
-  opacity: 0;
   pointer-events: none;
-  transition: opacity 0.12s, transform 0.12s;
-  z-index: 5;
+  z-index: 1000;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  animation: tooltip-in 0.12s ease-out;
 }
 
-.card:hover .card-tooltip {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
 }
 
 .tooltip-title {
