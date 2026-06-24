@@ -3,11 +3,13 @@ import { UploadScreen } from './components/UploadScreen'
 import { YearRow } from './components/YearRow'
 import { buildMovies } from './lib/csv'
 import { groupMovies } from './lib/group'
+import { clearMovies, loadMovies, saveMovies } from './lib/storage'
 import { getApiKey, resolvePosters, setApiKey } from './lib/tmdb'
 import type { GroupMode, Movie } from './types'
 
 export default function App() {
-  const [movies, setMovies] = useState<Movie[] | null>(null)
+  // Restore a previously uploaded list so reloads skip the upload step.
+  const [movies, setMovies] = useState<Movie[] | null>(() => loadMovies())
   const [mode, setMode] = useState<GroupMode>('year')
   const [apiKey, setKey] = useState(getApiKey())
   const [error, setError] = useState<string | null>(null)
@@ -42,10 +44,17 @@ export default function App() {
   async function handleUpload(watched: File, ratings: File) {
     setError(null)
     try {
-      setMovies(await buildMovies(watched, ratings))
+      const built = await buildMovies(watched, ratings)
+      saveMovies(built)
+      setMovies(built)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to parse CSV files.')
     }
+  }
+
+  function handleReupload() {
+    clearMovies()
+    setMovies(null)
   }
 
   function handleKeyChange(value: string) {
@@ -65,19 +74,24 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <div className="toggle">
-          <button
-            className={mode === 'year' ? 'active' : ''}
-            onClick={() => setMode('year')}
-          >
-            By Year
+        <div className="topbar-left">
+          <button className="link-btn" onClick={handleReupload}>
+            ← Upload new files
           </button>
-          <button
-            className={mode === 'decade' ? 'active' : ''}
-            onClick={() => setMode('decade')}
-          >
-            By Decade
-          </button>
+          <div className="toggle">
+            <button
+              className={mode === 'year' ? 'active' : ''}
+              onClick={() => setMode('year')}
+            >
+              By Year
+            </button>
+            <button
+              className={mode === 'decade' ? 'active' : ''}
+              onClick={() => setMode('decade')}
+            >
+              By Decade
+            </button>
+          </div>
         </div>
 
         <input
