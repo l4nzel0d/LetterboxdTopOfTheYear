@@ -368,6 +368,41 @@ body {
   font-size: 15px;
 }
 
+/* ---------- Rating-breakdown tooltip (portalled, position driven by JS) ---------- */
+
+.rating-tooltip {
+  position: fixed;
+  width: max-content;
+  background: #0e1217;
+  border: 1px solid #2a323c;
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  animation: tooltip-in 0.12s ease-out;
+}
+
+.rating-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rating-stars {
+  color: var(--green);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.rating-num {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- Swiper ---------- */
 
 .swiper {
