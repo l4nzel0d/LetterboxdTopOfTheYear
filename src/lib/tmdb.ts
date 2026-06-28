@@ -1,6 +1,8 @@
+import { showToast } from './toast'
 import type { Movie } from '../types'
 
 const SEARCH_URL = 'https://api.themoviedb.org/3/search/movie'
+const CONFIG_URL = 'https://api.themoviedb.org/3/configuration'
 const IMG_BASE = 'https://image.tmdb.org/t/p/w342'
 const CACHE_PREFIX = 'tmdb:poster:'
 const KEY_STORAGE = 'tmdb:apiKey'
@@ -15,6 +17,24 @@ export function getApiKey(): string {
 export function setApiKey(key: string): void {
   if (key) localStorage.setItem(KEY_STORAGE, key.trim())
   else localStorage.removeItem(KEY_STORAGE)
+}
+
+export type KeyCheck = 'valid' | 'invalid' | 'unreachable'
+
+/**
+ * Check an API key against TMDB without side effects. `configuration` requires
+ * a valid key, so a 200 means accepted and a 401 means rejected; anything else
+ * (network failure, outage) is reported as unreachable rather than invalid.
+ */
+export async function validateApiKey(apiKey: string): Promise<KeyCheck> {
+  try {
+    const res = await fetch(`${CONFIG_URL}?api_key=${encodeURIComponent(apiKey)}`)
+    if (res.ok) return 'valid'
+    if (res.status === 401) return 'invalid'
+    return 'unreachable'
+  } catch {
+    return 'unreachable'
+  }
 }
 
 function cacheKey(name: string, year: number | null): string {
@@ -43,19 +63,37 @@ async function fetchPoster(
   const params = new URLSearchParams({ api_key: apiKey, query: name })
   if (year != null) params.set('year', String(year))
 
-  let url: string | null = null
+  let res: Response
   try {
-    const res = await fetch(`${SEARCH_URL}?${params}`)
-    if (res.ok) {
-      const data = (await res.json()) as { results?: { poster_path?: string }[] }
-      const path = data.results?.find((r) => r.poster_path)?.poster_path
-      if (path) url = `${IMG_BASE}${path}`
-    }
+    res = await fetch(`${SEARCH_URL}?${params}`)
   } catch {
-    // Network/parse failure: don't cache, so a later attempt can retry.
+    // Network failure: surface it (deduped to one toast) and don't cache, so a
+    // later attempt can retry once connectivity is back.
+    showToast("Couldn't reach TMDB to load posters.", 'error')
     return null
   }
 
+  if (!res.ok) {
+    // 401 means a bad key, which key validation already reports — don't repeat
+    // it here. Other non-ok responses (rate limits, outages) are transient, so
+    // report them and skip caching so they can retry.
+    if (res.status !== 401) {
+      showToast('TMDB had trouble loading posters. Some may be missing.', 'error')
+    }
+    return null
+  }
+
+  let url: string | null = null
+  try {
+    const data = (await res.json()) as { results?: { poster_path?: string }[] }
+    const path = data.results?.find((r) => r.poster_path)?.poster_path
+    if (path) url = `${IMG_BASE}${path}`
+  } catch {
+    return null
+  }
+
+  // Cache only confirmed lookups (a real URL or a genuine "no poster"); errors
+  // above bail out before here so a transient failure never poisons the cache.
   writeCache(name, year, url)
   return url
 }

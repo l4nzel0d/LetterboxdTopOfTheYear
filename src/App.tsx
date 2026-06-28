@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Histogram } from './components/Histogram'
+import { Toaster } from './components/Toaster'
 import { UploadScreen } from './components/UploadScreen'
 import { YearRow } from './components/YearRow'
 import { buildMovies } from './lib/csv'
 import { groupMovies } from './lib/group'
 import { clearMovies, loadMovies, saveMovies } from './lib/storage'
-import { getApiKey, resolvePosters, setApiKey } from './lib/tmdb'
+import { showToast } from './lib/toast'
+import { getApiKey, resolvePosters, setApiKey, validateApiKey } from './lib/tmdb'
 import type { GroupMode, Movie } from './types'
 
 export default function App() {
@@ -13,12 +15,34 @@ export default function App() {
   const [movies, setMovies] = useState<Movie[] | null>(() => loadMovies())
   const [mode, setMode] = useState<GroupMode>('year')
   const [apiKey, setKey] = useState(getApiKey())
-  const [error, setError] = useState<string | null>(null)
+  // Seed with the stored key so we don't re-validate (and re-toast) it on every
+  // reload — only a key the user actually changes gets checked.
+  const lastCheckedKey = useRef<string>(getApiKey().trim())
 
   const groups = useMemo(
     () => (movies ? groupMovies(movies, mode) : []),
     [movies, mode],
   )
+
+  // Validate a newly entered key against TMDB and toast the outcome. Debounced
+  // so we check once the user stops typing/pasting rather than per keystroke.
+  useEffect(() => {
+    const key = apiKey.trim()
+    if (!key || key === lastCheckedKey.current) return
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      const result = await validateApiKey(key)
+      if (cancelled) return
+      lastCheckedKey.current = key
+      if (result === 'valid') showToast('TMDB API key accepted.', 'success')
+      else if (result === 'invalid') showToast('Invalid TMDB API key.', 'error')
+      else showToast("Couldn't reach TMDB to verify the key.", 'error')
+    }, 600)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [apiKey])
 
   // Resolve posters whenever we have movies and a key. Re-runs if the key is
   // entered after upload; cached lookups make repeat runs effectively free.
@@ -43,13 +67,15 @@ export default function App() {
   }, [movies, apiKey])
 
   async function handleUpload(watched: File, ratings: File) {
-    setError(null)
     try {
       const built = await buildMovies(watched, ratings)
       saveMovies(built)
       setMovies(built)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to parse CSV files.')
+      showToast(
+        e instanceof Error ? e.message : 'Failed to parse CSV files.',
+        'error',
+      )
     }
   }
 
@@ -63,54 +89,53 @@ export default function App() {
     setApiKey(value)
   }
 
-  if (!movies) {
-    return (
-      <>
-        <UploadScreen onSubmit={handleUpload} />
-        {error && <div className="toast-error">{error}</div>}
-      </>
-    )
-  }
-
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="topbar-left">
-          <button className="link-btn" onClick={handleReupload}>
-            ← Upload new files
-          </button>
-          <div className="toggle">
-            <button
-              className={mode === 'year' ? 'active' : ''}
-              onClick={() => setMode('year')}
-            >
-              By Year
-            </button>
-            <button
-              className={mode === 'decade' ? 'active' : ''}
-              onClick={() => setMode('decade')}
-            >
-              By Decade
-            </button>
-          </div>
+    <>
+      {!movies ? (
+        <UploadScreen onSubmit={handleUpload} />
+      ) : (
+        <div className="app">
+          <header className="topbar">
+            <div className="topbar-left">
+              <button className="link-btn" onClick={handleReupload}>
+                ← Upload new files
+              </button>
+              <div className="toggle">
+                <button
+                  className={mode === 'year' ? 'active' : ''}
+                  onClick={() => setMode('year')}
+                >
+                  By Year
+                </button>
+                <button
+                  className={mode === 'decade' ? 'active' : ''}
+                  onClick={() => setMode('decade')}
+                >
+                  By Decade
+                </button>
+              </div>
+            </div>
+
+            <input
+              className="key-input"
+              type="password"
+              placeholder="TMDB API key (for posters)"
+              value={apiKey}
+              onChange={(e) => handleKeyChange(e.target.value)}
+            />
+          </header>
+
+          <Histogram groups={groups} mode={mode} />
+
+          <main className="rows">
+            {groups.map((group) => (
+              <YearRow key={group.key} group={group} />
+            ))}
+          </main>
         </div>
+      )}
 
-        <input
-          className="key-input"
-          type="password"
-          placeholder="TMDB API key (for posters)"
-          value={apiKey}
-          onChange={(e) => handleKeyChange(e.target.value)}
-        />
-      </header>
-
-      <Histogram groups={groups} mode={mode} />
-
-      <main className="rows">
-        {groups.map((group) => (
-          <YearRow key={group.key} group={group} />
-        ))}
-      </main>
-    </div>
+      <Toaster />
+    </>
   )
 }
