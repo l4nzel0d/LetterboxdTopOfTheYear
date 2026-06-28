@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ApiKeyScreen } from './components/ApiKeyScreen'
 import { Histogram } from './components/Histogram'
 import { Toaster } from './components/Toaster'
 import { UploadScreen } from './components/UploadScreen'
@@ -15,6 +16,9 @@ export default function App() {
   const [movies, setMovies] = useState<Movie[] | null>(() => loadMovies())
   const [mode, setMode] = useState<GroupMode>('year')
   const [apiKey, setKey] = useState(getApiKey())
+  // After a fresh upload we pause on the key-entry step; reloads with a stored
+  // list (or an already-saved key) go straight to the grid.
+  const [phase, setPhase] = useState<'apikey' | 'grid'>('grid')
   // Seed with the stored key so we don't re-validate (and re-toast) it on every
   // reload — only a key the user actually changes gets checked.
   const lastCheckedKey = useRef<string>(getApiKey().trim())
@@ -71,12 +75,19 @@ export default function App() {
       const built = await buildMovies(watched, ratings)
       saveMovies(built)
       setMovies(built)
+      // Prompt for a key next, unless one is already saved.
+      setPhase(getApiKey().trim() ? 'grid' : 'apikey')
     } catch (e) {
       showToast(
         e instanceof Error ? e.message : 'Failed to parse CSV files.',
         'error',
       )
     }
+  }
+
+  function handleKeyContinue(key: string) {
+    if (key) handleKeyChange(key)
+    setPhase('grid')
   }
 
   function handleReupload() {
@@ -93,6 +104,8 @@ export default function App() {
     <>
       {!movies ? (
         <UploadScreen onSubmit={handleUpload} />
+      ) : phase === 'apikey' ? (
+        <ApiKeyScreen onContinue={handleKeyContinue} />
       ) : (
         <div className="app">
           <header className="topbar">
