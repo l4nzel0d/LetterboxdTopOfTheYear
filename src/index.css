@@ -447,6 +447,12 @@ body {
   gap: 8px;
 }
 
+.app-footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+}
+
 .year-row {
   display: grid;
   grid-template-columns: 140px 1fr;

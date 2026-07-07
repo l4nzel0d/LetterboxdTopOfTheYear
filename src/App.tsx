@@ -8,7 +8,13 @@ import { buildMovies } from './lib/csv'
 import { groupMovies } from './lib/group'
 import { clearMovies, loadMovies, saveMovies } from './lib/storage'
 import { showToast } from './lib/toast'
-import { getApiKey, resolvePosters, setApiKey, validateApiKey } from './lib/tmdb'
+import {
+  clearPosterCache,
+  getApiKey,
+  resolvePosters,
+  setApiKey,
+  validateApiKey,
+} from './lib/tmdb'
 import type { GroupMode, Movie } from './types'
 
 export default function App() {
@@ -95,6 +101,20 @@ export default function App() {
     setMovies(null)
   }
 
+  // Wipe the poster cache and clear every resolved poster so the resolution
+  // effect re-queries TMDB for the whole list from scratch.
+  function handleRefreshPosters() {
+    if (!apiKey.trim()) {
+      showToast('Add a TMDB API key to load posters.', 'error')
+      return
+    }
+    clearPosterCache()
+    setMovies((prev) =>
+      prev ? prev.map((m) => ({ ...m, posterUrl: null })) : prev,
+    )
+    showToast('Refreshing posters…', 'success')
+  }
+
   function handleKeyChange(value: string) {
     setKey(value)
     setApiKey(value)
@@ -145,6 +165,12 @@ export default function App() {
               <YearRow key={group.key} group={group} />
             ))}
           </main>
+
+          <footer className="app-footer">
+            <button className="link-btn" onClick={handleRefreshPosters}>
+              ↻ Refresh posters
+            </button>
+          </footer>
         </div>
       )}
 

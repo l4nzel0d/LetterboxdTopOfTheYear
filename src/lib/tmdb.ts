@@ -42,6 +42,20 @@ function cacheKey(name: string, year: number | null): string {
   return `${CACHE_PREFIX}${name.toLowerCase()}|${year ?? ''}`
 }
 
+/**
+ * Drop every cached poster lookup (hits and `__miss__` sentinels alike) so the
+ * next `resolvePosters` re-queries TMDB from scratch. Used by the manual
+ * "refresh posters" action.
+ */
+export function clearPosterCache(): void {
+  const keys: string[] = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (key?.startsWith(CACHE_PREFIX)) keys.push(key)
+  }
+  for (const key of keys) localStorage.removeItem(key)
+}
+
 function readCache(name: string, year: number | null): string | null | undefined {
   const raw = localStorage.getItem(cacheKey(name, year))
   if (raw == null) return undefined // never looked up
