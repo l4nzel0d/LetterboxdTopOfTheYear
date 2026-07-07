@@ -1,7 +1,8 @@
 import { showToast } from './toast'
 import type { Movie } from '../types'
 
-const SEARCH_URL = 'https://api.themoviedb.org/3/search/movie'
+const SEARCH_MOVIE_URL = 'https://api.themoviedb.org/3/search/movie'
+const SEARCH_TV_URL = 'https://api.themoviedb.org/3/search/tv'
 const CONFIG_URL = 'https://api.themoviedb.org/3/configuration'
 const IMG_BASE = 'https://image.tmdb.org/t/p/w342'
 const CACHE_PREFIX = 'tmdb:poster:'
@@ -51,26 +52,64 @@ function writeCache(name: string, year: number | null, url: string | null): void
   localStorage.setItem(cacheKey(name, year), url ?? MISS)
 }
 
-/** Resolve a single poster URL, consulting the cache first. Returns null on miss. */
-async function fetchPoster(
+/** A single TMDB search hit, across movie (`title`) and TV (`name`) shapes. */
+interface SearchResult {
+  poster_path?: string
+  title?: string
+  name?: string
+  original_title?: string
+  original_name?: string
+}
+
+/**
+ * Outcome of one TMDB search:
+ *  - `found`: a result whose title exactly matches the query has a poster.
+ *  - `fuzzy`: no exact-title match, but some result has a poster (best guess).
+ *  - `none`:  reached TMDB, no result had a poster at all.
+ *  - `error`: network/HTTP failure (toast already surfaced).
+ */
+type SearchOutcome =
+  | { status: 'found'; url: string }
+  | { status: 'fuzzy'; url: string }
+  | { status: 'none' }
+  | { status: 'error' }
+
+/** Normalize a title for comparison: strip diacritics/punctuation, fold case, collapse spaces. */
+function normalizeTitle(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+/** Every title-ish field on a result (English + original, movie + TV). */
+function titlesOf(r: SearchResult): string[] {
+  return [r.title, r.name, r.original_title, r.original_name].filter(
+    (t): t is string => typeof t === 'string',
+  )
+}
+
+/** Run a single search endpoint (movie or TV) and classify the result. */
+async function search(
   apiKey: string,
+  endpoint: string,
   name: string,
   year: number | null,
-): Promise<string | null> {
-  const cached = readCache(name, year)
-  if (cached !== undefined) return cached
-
+  yearParam: string,
+): Promise<SearchOutcome> {
   const params = new URLSearchParams({ api_key: apiKey, query: name })
-  if (year != null) params.set('year', String(year))
+  if (year != null) params.set(yearParam, String(year))
 
   let res: Response
   try {
-    res = await fetch(`${SEARCH_URL}?${params}`)
+    res = await fetch(`${endpoint}?${params}`)
   } catch {
     // Network failure: surface it (deduped to one toast) and don't cache, so a
     // later attempt can retry once connectivity is back.
     showToast("Couldn't reach TMDB to load posters.", 'error')
-    return null
+    return { status: 'error' }
   }
 
   if (!res.ok) {
@@ -80,17 +119,65 @@ async function fetchPoster(
     if (res.status !== 401) {
       showToast('TMDB had trouble loading posters. Some may be missing.', 'error')
     }
-    return null
+    return { status: 'error' }
   }
 
-  let url: string | null = null
   try {
-    const data = (await res.json()) as { results?: { poster_path?: string }[] }
-    const path = data.results?.find((r) => r.poster_path)?.poster_path
-    if (path) url = `${IMG_BASE}${path}`
+    const data = (await res.json()) as { results?: SearchResult[] }
+    const results = (data.results ?? []).filter((r) => r.poster_path)
+    if (results.length === 0) return { status: 'none' }
+
+    // Prefer a result whose title actually matches the query — TMDB's fuzzy
+    // search otherwise lets e.g. "Shogun" match "Shogun's Samurai".
+    const q = normalizeTitle(name)
+    const exact = results.find((r) => titlesOf(r).some((t) => normalizeTitle(t) === q))
+    const path = exact?.poster_path ?? results[0].poster_path
+    return {
+      status: exact ? 'found' : 'fuzzy',
+      url: `${IMG_BASE}${path}`,
+    }
   } catch {
-    return null
+    return { status: 'error' }
   }
+}
+
+/**
+ * Resolve a single poster URL, consulting the cache first. Returns null on miss.
+ * Searches movies first, then TV so miniseries/shows that Letterboxd logs (e.g.
+ * limited series) resolve too. An exact-title match on either wins; only if
+ * neither has one do we fall back to a fuzzy best-guess poster.
+ */
+async function fetchPoster(
+  apiKey: string,
+  name: string,
+  year: number | null,
+): Promise<string | null> {
+  const cached = readCache(name, year)
+  if (cached !== undefined) return cached
+
+  const movie = await search(apiKey, SEARCH_MOVIE_URL, name, year, 'year')
+  if (movie.status === 'error') return null // transient — don't cache, allow retry
+  if (movie.status === 'found') {
+    writeCache(name, year, movie.url)
+    return movie.url
+  }
+
+  // No exact movie match: try TV (year lives in first_air_date there).
+  const tv = await search(apiKey, SEARCH_TV_URL, name, year, 'first_air_date_year')
+  if (tv.status === 'error') return null
+  if (tv.status === 'found') {
+    writeCache(name, year, tv.url)
+    return tv.url
+  }
+
+  // Neither index had an exact-title match. Fall back to a fuzzy poster if one
+  // exists (movie preferred over TV), otherwise a confirmed miss.
+  const url =
+    movie.status === 'fuzzy'
+      ? movie.url
+      : tv.status === 'fuzzy'
+        ? tv.url
+        : null
 
   // Cache only confirmed lookups (a real URL or a genuine "no poster"); errors
   // above bail out before here so a transient failure never poisons the cache.
