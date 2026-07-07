@@ -41,7 +41,7 @@ export function UploadScreen({ onSubmit }: Props) {
           disabled={!ready}
           onClick={() => ready && onSubmit(watched!, ratings!)}
         >
-          Build my year
+          Visualize my data
         </button>
       </div>
     </div>
