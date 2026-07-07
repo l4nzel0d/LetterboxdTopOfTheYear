@@ -61,7 +61,7 @@ export function YearRow({ group }: { group: MovieGroup }) {
     return () => cancelAnimationFrame(id)
   }, [group.key, group.movies.length])
 
-  // Position the portalled stats tooltip just below the group title.
+  // Position the portalled stats tooltip just above the group title.
   const placeStats = useCallback(() => {
     const head = headRef.current
     const tip = tooltipRef.current
@@ -73,7 +73,7 @@ export function YearRow({ group }: { group: MovieGroup }) {
       window.innerWidth - width - GAP,
     )
     tip.style.left = `${left}px`
-    tip.style.top = `${rect.bottom + GAP}px`
+    tip.style.bottom = `${window.innerHeight - rect.top + GAP}px`
   }, [])
 
   useLayoutEffect(() => {
