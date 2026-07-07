@@ -4,7 +4,8 @@ import type { GroupMode, MovieGroup } from '../types'
 
 const BAR_AREA = 150 // px tall plotting area for the bars (keep in sync with CSS .hist-bar-area)
 const MIN_BAR = 3 // px floor so a non-empty year is always visible
-const GAP = 8 // tooltip offset / viewport margin
+const GAP = 8 // horizontal tooltip offset / viewport margin
+const BAR_GAP = 16 // vertical gap between the tooltip and the top of the bar
 
 interface HoverState {
   label: string
@@ -15,7 +16,7 @@ interface HoverState {
 function scrollToGroup(key: number) {
   document
     .getElementById(`group-${key}`)
-    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
 export function Histogram({
@@ -26,7 +27,7 @@ export function Histogram({
   mode: GroupMode
 }) {
   const swiperRef = useRef<HTMLDivElement>(null)
-  const barElRef = useRef<HTMLElement | null>(null)
+  const barElRef = useRef<HTMLElement | null>(null) // the .hist-bar span, so the tooltip tracks the bar's top
   const tooltipRef = useRef<HTMLDivElement>(null)
   const [hovered, setHovered] = useState<HoverState | null>(null)
 
@@ -46,7 +47,7 @@ export function Histogram({
       window.innerWidth - width - GAP,
     )
     tip.style.left = `${left}px`
-    tip.style.bottom = `${window.innerHeight - rect.top + GAP}px`
+    tip.style.bottom = `${window.innerHeight - rect.top + BAR_GAP}px`
   }, [])
 
   useLayoutEffect(() => {
@@ -88,7 +89,8 @@ export function Histogram({
               className="hist-col"
               onClick={() => scrollToGroup(g.key)}
               onMouseEnter={(e) => {
-                barElRef.current = e.currentTarget
+                barElRef.current =
+                  e.currentTarget.querySelector('.hist-bar') ?? e.currentTarget
                 setHovered({ label: g.label, count })
               }}
               onMouseLeave={() => setHovered(null)}
