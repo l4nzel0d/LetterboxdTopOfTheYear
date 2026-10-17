@@ -1,41 +1,26 @@
 import { showToast } from './toast'
 import type { Movie } from '../types'
 
-const SEARCH_MOVIE_URL = 'https://api.themoviedb.org/3/search/movie'
-const SEARCH_TV_URL = 'https://api.themoviedb.org/3/search/tv'
-const CONFIG_URL = 'https://api.themoviedb.org/3/configuration'
+/**
+ * Same-origin proxy (`api/tmdb.js`) that signs TMDB search requests with a
+ * server-side key, so no key ever reaches the browser. Poster *images* need no
+ * key, so those still come straight from TMDB.
+ */
+const PROXY_URL = '/api/tmdb'
+const SEARCH_MOVIE_PATH = 'search/movie'
+const SEARCH_TV_PATH = 'search/tv'
 const IMG_BASE = 'https://image.tmdb.org/t/p/w342'
 const CACHE_PREFIX = 'tmdb:poster:'
-const KEY_STORAGE = 'tmdb:apiKey'
 
 /** Sentinel stored in the cache for a confirmed "no poster found" so we don't re-query. */
 const MISS = '__miss__'
 
-export function getApiKey(): string {
-  return localStorage.getItem(KEY_STORAGE) ?? ''
-}
-
-export function setApiKey(key: string): void {
-  if (key) localStorage.setItem(KEY_STORAGE, key.trim())
-  else localStorage.removeItem(KEY_STORAGE)
-}
-
-export type KeyCheck = 'valid' | 'invalid' | 'unreachable'
-
-/**
- * Check an API key against TMDB without side effects. `configuration` requires
- * a valid key, so a 200 means accepted and a 401 means rejected; anything else
- * (network failure, outage) is reported as unreachable rather than invalid.
- */
-export async function validateApiKey(apiKey: string): Promise<KeyCheck> {
-  try {
-    const res = await fetch(`${CONFIG_URL}?api_key=${encodeURIComponent(apiKey)}`)
-    if (res.ok) return 'valid'
-    if (res.status === 401) return 'invalid'
-    return 'unreachable'
-  } catch {
-    return 'unreachable'
-  }
+// Posters used to need a key the user pasted in, kept in localStorage. One-time
+// cleanup so returning visitors don't keep a stale secret in their browser.
+try {
+  localStorage.removeItem('tmdb:apiKey')
+} catch {
+  // Best-effort: a blocked localStorage just means there's nothing to clean up.
 }
 
 function cacheKey(name: string, year: number | null): string {
@@ -105,20 +90,19 @@ function titlesOf(r: SearchResult): string[] {
   )
 }
 
-/** Run a single search endpoint (movie or TV) and classify the result. */
+/** Run a single search endpoint (movie or TV) through the proxy and classify the result. */
 async function search(
-  apiKey: string,
-  endpoint: string,
+  path: string,
   name: string,
   year: number | null,
   yearParam: string,
 ): Promise<SearchOutcome> {
-  const params = new URLSearchParams({ api_key: apiKey, query: name })
+  const params = new URLSearchParams({ path, query: name })
   if (year != null) params.set(yearParam, String(year))
 
   let res: Response
   try {
-    res = await fetch(`${endpoint}?${params}`)
+    res = await fetch(`${PROXY_URL}?${params}`)
   } catch {
     // Network failure: surface it (deduped to one toast) and don't cache, so a
     // later attempt can retry once connectivity is back.
@@ -127,10 +111,14 @@ async function search(
   }
 
   if (!res.ok) {
-    // 401 means a bad key, which key validation already reports — don't repeat
-    // it here. Other non-ok responses (rate limits, outages) are transient, so
-    // report them and skip caching so they can retry.
-    if (res.status !== 401) {
+    // 503 means this host has no TMDB key configured, so posters simply aren't
+    // available here — one standing message, not a transient hiccup. Anything
+    // else (rate limits, outages) can clear up, so report it and skip caching
+    // so it can retry. Both toasts are deduped by `lib/toast.ts`, which keeps a
+    // burst of concurrent failures from stacking.
+    if (res.status === 503) {
+      showToast('Posters are unavailable right now.', 'error')
+    } else {
       showToast('TMDB had trouble loading posters. Some may be missing.', 'error')
     }
     return { status: 'error' }
@@ -145,10 +133,10 @@ async function search(
     // search otherwise lets e.g. "Shogun" match "Shogun's Samurai".
     const q = normalizeTitle(name)
     const exact = results.find((r) => titlesOf(r).some((t) => normalizeTitle(t) === q))
-    const path = exact?.poster_path ?? results[0].poster_path
+    const posterPath = exact?.poster_path ?? results[0].poster_path
     return {
       status: exact ? 'found' : 'fuzzy',
-      url: `${IMG_BASE}${path}`,
+      url: `${IMG_BASE}${posterPath}`,
     }
   } catch {
     return { status: 'error' }
@@ -161,15 +149,11 @@ async function search(
  * limited series) resolve too. An exact-title match on either wins; only if
  * neither has one do we fall back to a fuzzy best-guess poster.
  */
-async function fetchPoster(
-  apiKey: string,
-  name: string,
-  year: number | null,
-): Promise<string | null> {
+async function fetchPoster(name: string, year: number | null): Promise<string | null> {
   const cached = readCache(name, year)
   if (cached !== undefined) return cached
 
-  const movie = await search(apiKey, SEARCH_MOVIE_URL, name, year, 'year')
+  const movie = await search(SEARCH_MOVIE_PATH, name, year, 'year')
   if (movie.status === 'error') return null // transient — don't cache, allow retry
   if (movie.status === 'found') {
     writeCache(name, year, movie.url)
@@ -177,7 +161,7 @@ async function fetchPoster(
   }
 
   // No exact movie match: try TV (year lives in first_air_date there).
-  const tv = await search(apiKey, SEARCH_TV_URL, name, year, 'first_air_date_year')
+  const tv = await search(SEARCH_TV_PATH, name, year, 'first_air_date_year')
   if (tv.status === 'error') return null
   if (tv.status === 'found') {
     writeCache(name, year, tv.url)
@@ -206,7 +190,6 @@ async function fetchPoster(
  */
 export async function resolvePosters(
   movies: Movie[],
-  apiKey: string,
   onResolve: (uri: string, posterUrl: string | null) => void,
   concurrency = 8,
 ): Promise<void> {
@@ -215,7 +198,7 @@ export async function resolvePosters(
   const worker = async () => {
     while (queue.length) {
       const movie = queue.shift()!
-      const url = await fetchPoster(apiKey, movie.name, movie.year)
+      const url = await fetchPoster(movie.name, movie.year)
       onResolve(movie.uri, url)
     }
   }
