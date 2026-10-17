@@ -6,3 +6,8 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 .claude
+# Build artifacts
+*.tsbuildinfo
+
+# Local design references
+refs/
