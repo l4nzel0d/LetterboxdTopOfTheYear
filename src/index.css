@@ -8,6 +8,10 @@
   --green: #00e054;
   --accent: #40bcf4;
   --radius: 4px;
+  /* Year-row label column + grid gap; the decade histogram is inset by both
+     so its bars line up with the start of the poster swipers. */
+  --year-col: 140px;
+  --year-gap: 8px;
 
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
     Arial, sans-serif;
@@ -276,13 +280,21 @@ body {
 }
 
 /* Decades are few and every bar is labelled, so give them wider columns
-   and more spacing to keep the rotated labels from colliding. */
+   and more spacing to keep the labels from colliding. */
+.histogram.is-decade {
+  margin-left: calc(var(--year-col) + var(--year-gap));
+}
+
 .histogram.is-decade .hist-track {
   gap: 10px;
 }
 
 .histogram.is-decade .hist-col {
   width: 72px;
+}
+
+.histogram.is-decade .hist-axis {
+  height: 40px;
 }
 
 .hist-bar-area {
@@ -322,6 +334,13 @@ body {
   font-size: 11px;
   color: var(--text-dim);
   white-space: nowrap;
+}
+
+/* Decade bars are wide enough for upright labels, centered under each bar. */
+.histogram.is-decade .hist-tick-label {
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
 }
 
 .hist-tooltip {
@@ -374,9 +393,9 @@ body {
 
 .year-row {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: var(--year-col) 1fr;
   align-items: center;
-  gap: 8px;
+  gap: var(--year-gap);
   min-height: 180px;
 }
 
