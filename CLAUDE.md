@@ -14,7 +14,7 @@ There is no test runner or linter configured. `npm run build` is the only gate �
 
 Posters in dev need a key: put `TMDB_API_KEY=<key>` in `.env.local` (gitignored). Without it `/api/tmdb` answers `503` and the app runs poster-less. `npm run dev` serves the proxy itself, so the Vercel CLI is not required.
 
-Dev server access note: Vite binds `::1` (IPv6) only, which `curl`/PowerShell on Windows often can't reach. To hit it over IPv4, run `npm run dev -- --host 127.0.0.1`.
+Dev server access note: Vite binds `::1` (IPv6) only, which `curl`/PowerShell on Windows often can't reach. **Always start it with `npm run dev -- --host 127.0.0.1`, not plain `npm run dev`**, so it is reachable over IPv4.
 
 ## Big picture
 
@@ -38,11 +38,13 @@ Data flows in one direction through `src/lib/`, then into components:
 
 - **The proxy is an allowlist, not a passthrough.** `ALLOWED_PATHS` in `api/_tmdb.js` is deliberately limited to the two search endpoints, and the handler overwrites any caller-supplied `api_key`. The endpoint is public, so widening it hands strangers our TMDB quota. A missing server key returns `503`, which the client surfaces as one standing "Posters are unavailable right now." toast rather than an error per film.
 
-- **Tooltips are portalled to `document.body` with `position: fixed`, positioned imperatively.** Card hover tooltips (`MovieCard.tsx`), histogram bar tooltips (`Histogram.tsx`), and the rating-breakdown tooltip on group titles (`YearRow.tsx`) all use the same pattern: `createPortal` to `body`, then a `place()`/`recompute()` callback that reads `getBoundingClientRect()` + the tooltip's measured `offsetWidth`, clamps to the viewport, and re-runs on capture-phase `scroll` (third arg `true`, to catch nested scroll containers) and `resize`. This exists specifically to escape the swipers' `overflow: auto` clipping — keep new tooltips on this pattern rather than CSS-positioned children.
+- **Tooltips are portalled to `document.body` with `position: fixed`, positioned imperatively.** Card hover tooltips (`MovieCard.tsx`), histogram bar tooltips (`Histogram.tsx`, year mode only — decade bars show their count in place via `.hist-count` on hover instead), and the rating-breakdown tooltip on group titles (`YearRow.tsx`) all use the same pattern: `createPortal` to `body`, then a `place()`/`recompute()` callback that reads `getBoundingClientRect()` + the tooltip's measured `offsetWidth`, clamps to the viewport, and re-runs on capture-phase `scroll` (third arg `true`, to catch nested scroll containers) and `resize`. This exists specifically to escape the swipers' `overflow: auto` clipping — keep new tooltips on this pattern rather than CSS-positioned children.
 
 - **Swipers reset `scrollLeft` in `useLayoutEffect` + a `requestAnimationFrame`.** The browser restores nested scroll-container positions on reload; the double reset (now, then next frame) overrides that. `YearRow` resets to 0 (leftmost); `Histogram` resets to `scrollWidth` (rightmost / newest). If you add a scroll container, replicate this or it will land mid-scroll on reload.
 
-- **Histogram bar height constant `BAR_AREA` (150) must stay in sync with CSS `.hist-bar-area` height.** They are coupled by hand.
+- **Histogram bar height constant `BAR_AREA` (150) must stay in sync with CSS `.hist-bar-area` height *and* `.hist-grid` height (both 150px).** They are coupled by hand; the milestone lines are positioned with `bottom: (m / max) * BAR_AREA`, so a mismatch misaligns the lines against the bars.
+
+- **Histogram milestone lines** (`.hist-grid` / `.hist-line`, a pointer-transparent layer inside the position-relative `.hist-track`, behind the bars): year mode draws a dashed line every `YEAR_STEP` (10) films strictly below the tallest bar; decade mode draws one at `DECADE_FIRST` (10) then every `DECADE_STEP` (50) up to and including the tallest. Labels are `position: sticky` so they stay visible while the histogram scrolls. In decade mode the track fills the swiper-width area (`min-width: 100%`, columns `flex: 1 0 72px`) and scrolls only once columns hit their minimum. Zero-film groups get an `.is-empty` stub bar.
 
 - **Group rows carry `id={`group-${group.key}`}`** so the histogram can `scrollIntoView` the matching row on bar click. The key is the year (e.g. `2024`) or decade-start year (e.g. `2020`), matching the histogram bar keys in either mode.
 
