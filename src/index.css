@@ -243,7 +243,7 @@ body {
 .histogram {
   overflow-x: auto;
   margin-bottom: 24px;
-  padding: 8px 4px;
+  padding: 32px 4px 8px; /* top room for count labels above the tallest bar */
   scrollbar-width: thin;
   scrollbar-color: #3a4552 transparent;
 }
@@ -267,6 +267,7 @@ body {
   margin: 0 auto;
 }
 
+  position: relative; /* anchors the milestone .hist-grid layer */
 /* Full-height hit area so even empty/short years are easy to hover and click. */
 .hist-col {
   display: flex;
@@ -310,6 +311,7 @@ body {
   background: #3f4b5b;
   border-radius: 2px 2px 0 0;
   transition: background 0.1s;
+  position: relative; /* paints above the guide lines; anchors .hist-count */
 }
 
 .hist-col:hover .hist-bar {
@@ -321,6 +323,66 @@ body {
 .hist-axis {
   position: relative;
   height: 52px;
+/* Zero-film groups: a faint stub so they read as "nothing here", not a tiny bar. */
+.hist-bar.is-empty {
+  background: #232b35;
+}
+
+.hist-col:hover .hist-bar.is-empty {
+  background: #3f4b5b;
+}
+
+/* Milestone guide lines: a pointer-transparent layer behind the bars, aligned
+   to the top of the bar area (BAR_AREA tall, same scale as the bars). */
+.hist-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 150px;
+  pointer-events: none;
+}
+
+.hist-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0; /* the label must not add height, or the border (its top edge) floats above `bottom` */
+  border-top: 1px dashed #2f3945;
+}
+
+/* Sticky so the value stays visible while the year swiper scrolls. */
+.hist-line-label {
+  position: sticky;
+  left: 0;
+  display: block;
+  width: max-content;
+  height: 0; /* zero layout footprint: the text overflows and is lifted above the line */
+  transform: translateY(calc(-1em - 4px));
+  line-height: 1;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+/* Decade graph only: the count appears above a bar on hover (no tooltip there). */
+.hist-count {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding-bottom: 4px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.hist-col:hover .hist-count {
+  opacity: 1;
+}
+
   width: 100%;
   padding-top: 8px;
 }
