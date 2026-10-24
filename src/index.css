@@ -238,6 +238,11 @@ body {
   color: var(--text);
 }
 
+.toggle button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* ---------- Histogram ---------- */
 
 .histogram {
@@ -488,6 +493,31 @@ body {
 .year-empty {
   color: var(--text-dim);
   font-size: 15px;
+}
+
+/* Gap year with watchlist films: hint line above a swiper of ghost cards. */
+.year-gap {
+  min-width: 0; /* let the swiper scroll instead of stretching the grid column */
+}
+
+.year-gap .year-empty {
+  padding: 0 4px;
+}
+
+.card.ghost .card-poster {
+  border: 1px dashed #3a4552;
+}
+
+.card.ghost .card-poster img,
+.card.ghost .card-placeholder {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+
+.card.ghost:hover .card-poster img,
+.card.ghost:hover .card-placeholder {
+  opacity: 0.8;
+  filter: none;
 }
 
 /* ---------- Rating-breakdown tooltip (portalled, position driven by JS) ---------- */

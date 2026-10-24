@@ -59,7 +59,7 @@ export function YearRow({ group }: { group: MovieGroup }) {
       el.scrollLeft = 0
     })
     return () => cancelAnimationFrame(id)
-  }, [group.key, group.movies.length])
+  }, [group.key, group.movies.length, group.watchlist.length])
 
   // Position the portalled stats tooltip just above the group title.
   const placeStats = useCallback(() => {
@@ -119,7 +119,18 @@ export function YearRow({ group }: { group: MovieGroup }) {
           )}
       </div>
       {group.movies.length === 0 ? (
-        <div className="year-empty">No movies to show here yet</div>
+        group.watchlist.length > 0 ? (
+          <div className="year-gap">
+            <div className="year-empty">Nothing watched yet. From your watchlist:</div>
+            <div className="swiper" ref={swiperRef}>
+              {group.watchlist.map((item) => (
+                <MovieCard key={item.uri} movie={item} ghost />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="year-empty">No movies to show here yet</div>
+        )
       ) : (
         <div className="swiper" ref={swiperRef}>
           {group.movies.map((movie) => (

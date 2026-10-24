@@ -1,5 +1,5 @@
 import Papa from 'papaparse'
-import type { Movie } from '../types'
+import type { Movie, WatchlistItem } from '../types'
 
 /** Shape of a row in either Letterboxd export; Rating is only present in ratings.csv. */
 interface RawRow {
@@ -63,6 +63,38 @@ export async function buildMovies(
   // Watched first so it defines the canonical entries, then any ratings-only rows.
   watched.forEach(ingest)
   ratings.forEach(ingest)
+
+  return [...byUri.values()]
+}
+
+/**
+ * Parse a Letterboxd `watchlist.csv`. Films already in the watched list are
+ * dropped (exports can be stale), as are rows without a usable year since they
+ * can't be placed in any group.
+ */
+export async function buildWatchlist(
+  file: File,
+  watched: Movie[],
+): Promise<WatchlistItem[]> {
+  const rows = await parse(file)
+  const watchedUris = new Set(watched.map((m) => m.uri))
+  const byUri = new Map<string, WatchlistItem>()
+
+  for (const row of rows) {
+    const uri = row['Letterboxd URI']?.trim()
+    const name = row.Name?.trim()
+    const year = row.Year ? Number(row.Year) : NaN
+    if (!uri || !name || Number.isNaN(year)) continue
+    if (watchedUris.has(uri) || byUri.has(uri)) continue
+    byUri.set(uri, {
+      uri,
+      name,
+      year,
+      rating: null,
+      posterUrl: null,
+      dateAdded: row.Date?.trim() || null,
+    })
+  }
 
   return [...byUri.values()]
 }

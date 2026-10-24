@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { Movie } from '../types'
+import type { Movie, WatchlistItem } from '../types'
 
 const GAP = 8 // space above the card, and the minimum margin from viewport edges
 
@@ -16,7 +16,14 @@ function Stars({ rating }: { rating: number }) {
   )
 }
 
-export function MovieCard({ movie }: { movie: Movie }) {
+/** `ghost` renders an unwatched watchlist film: dimmed with a dashed border. */
+export function MovieCard({
+  movie,
+  ghost = false,
+}: {
+  movie: Movie | WatchlistItem
+  ghost?: boolean
+}) {
   const cardRef = useRef<HTMLAnchorElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
@@ -55,7 +62,7 @@ export function MovieCard({ movie }: { movie: Movie }) {
 
   return (
     <a
-      className="card"
+      className={`card ${ghost ? 'ghost' : ''}`}
       ref={cardRef}
       href={movie.uri}
       target="_blank"

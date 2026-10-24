@@ -1,14 +1,16 @@
 import { useRef, useState } from 'react'
 
 interface Props {
-  onSubmit: (watched: File, ratings: File) => void
+  onSubmit: (watched: File, ratings: File, watchlist: File | null) => void
 }
 
 export function UploadScreen({ onSubmit }: Props) {
   const [watched, setWatched] = useState<File | null>(null)
   const [ratings, setRatings] = useState<File | null>(null)
+  const [watchlist, setWatchlist] = useState<File | null>(null)
   const watchedRef = useRef<HTMLInputElement>(null)
   const ratingsRef = useRef<HTMLInputElement>(null)
+  const watchlistRef = useRef<HTMLInputElement>(null)
 
   const ready = watched && ratings
 
@@ -34,12 +36,19 @@ export function UploadScreen({ onSubmit }: Props) {
             inputRef={ratingsRef}
             onPick={setRatings}
           />
+          <FilePicker
+            label="watchlist.csv"
+            optional
+            file={watchlist}
+            inputRef={watchlistRef}
+            onPick={setWatchlist}
+          />
         </div>
 
         <button
           className="upload-go"
           disabled={!ready}
-          onClick={() => ready && onSubmit(watched!, ratings!)}
+          onClick={() => ready && onSubmit(watched!, ratings!, watchlist)}
         >
           Visualize my data
         </button>
@@ -50,11 +59,13 @@ export function UploadScreen({ onSubmit }: Props) {
 
 function FilePicker({
   label,
+  optional = false,
   file,
   inputRef,
   onPick,
 }: {
   label: string
+  optional?: boolean
   file: File | null
   inputRef: React.RefObject<HTMLInputElement>
   onPick: (file: File) => void
@@ -71,7 +82,7 @@ function FilePicker({
         }}
       />
       <span className="file-label">{label}</span>
-      <span className="file-name">{file ? file.name : 'Choose file…'}</span>
+      <span className="file-name">{file ? file.name : optional ? 'Optional: fills empty years' : 'Choose file…'}</span>
     </label>
   )
 }

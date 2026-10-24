@@ -1,4 +1,4 @@
-import type { GroupMode, Movie, MovieGroup } from '../types'
+import type { GroupMode, Movie, MovieGroup, WatchlistItem } from '../types'
 
 /** Highest rating first; unrated films sink to the end, then alphabetical. */
 function compareMovies(a: Movie, b: Movie): number {
@@ -8,13 +8,38 @@ function compareMovies(a: Movie, b: Movie): number {
   return a.name.localeCompare(b.name)
 }
 
+/** Longest-waiting first (oldest date added), then alphabetical. */
+function compareWatchlist(a: WatchlistItem, b: WatchlistItem): number {
+  if (a.dateAdded !== b.dateAdded) {
+    if (!a.dateAdded) return 1
+    if (!b.dateAdded) return -1
+    return a.dateAdded.localeCompare(b.dateAdded)
+  }
+  return a.name.localeCompare(b.name)
+}
+
 /**
  * Bucket movies by year or decade and sort within each bucket. Groups are
- * returned newest-first. Movies with no year are skipped.
+ * returned newest-first. Movies with no year are skipped. Watchlist films are
+ * attached per group but never widen the range: bounds come from watched films
+ * only, so a stray old watchlist entry can't add dozens of empty rows.
  */
-export function groupMovies(movies: Movie[], mode: GroupMode): MovieGroup[] {
+export function groupMovies(
+  movies: Movie[],
+  mode: GroupMode,
+  watchlist: WatchlistItem[] = [],
+): MovieGroup[] {
   const step = mode === 'decade' ? 10 : 1
   const buckets = new Map<number, Movie[]>()
+  const watchBuckets = new Map<number, WatchlistItem[]>()
+
+  for (const item of watchlist) {
+    if (item.year == null) continue
+    const key = mode === 'decade' ? Math.floor(item.year / 10) * 10 : item.year
+    const bucket = watchBuckets.get(key)
+    if (bucket) bucket.push(item)
+    else watchBuckets.set(key, [item])
+  }
 
   for (const movie of movies) {
     if (movie.year == null) continue
@@ -40,6 +65,7 @@ export function groupMovies(movies: Movie[], mode: GroupMode): MovieGroup[] {
       key,
       label: mode === 'decade' ? `${key}s` : String(key),
       movies: list.sort(compareMovies),
+      watchlist: (watchBuckets.get(key) ?? []).sort(compareWatchlist),
     })
   }
   return groups

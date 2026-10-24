@@ -38,7 +38,7 @@
 
 ### 1. Export your data from Letterboxd
 
-On Letterboxd, go to **Settings → Data → Export your data**. You'll get a `.zip`; unzip it and find `watched.csv` and `ratings.csv`.
+On Letterboxd, go to **Settings → Data → Export your data**. You'll get a `.zip`; unzip it and find `watched.csv` and `ratings.csv`. Optionally add `watchlist.csv` too: years with no watched films then list your watchlist films from that year as dimmed "ghost" posters, and a **Gaps only** toggle (year view) hides every year you've already covered.
 
 > Don't have a Letterboxd account handy? Use the sample exports in [`example-data/`](example-data/).
 
