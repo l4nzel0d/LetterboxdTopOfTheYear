@@ -18,6 +18,10 @@
 
 <br />
 
+https://github.com/user-attachments/assets/eaef62e4-f6df-4ec2-b2e2-c5d56160f11b
+
+<br />
+
 <img src="docs/screenshots/by-year.jpg" alt="Poster wall grouped by year, with a histogram of films per year on top" width="900" />
 
 </div>
