@@ -28,7 +28,8 @@
 
 - **Year or decade view.** Every film you've logged on Letterboxd goes into a row for its release year or decade, newest first. Years with nothing in them between your oldest and newest film still show up, so gaps in your history are visible.
 - **Your favourites first.** Each row is sorted by your rating, highest first. Unrated films go last, and ties are broken alphabetically.
-- **Interactive histogram.** A bar chart of films per year or decade sits at the top. Hover a bar to see the count, click it to jump to that row.
+- **Interactive histogram.** A bar chart of films per year or decade sits at the top, with dashed milestone lines (every 10 films by year; 10, 50, 100, ... by decade) so bar heights are easy to read. Hover a year bar for a tooltip, or a decade bar to see its count; click either to jump to that row.
+- **Watchlist fills the gaps.** Add your `watchlist.csv` and years in which you haven't watched anything show films from your watchlist as dimmed "ghost" posters. A **Gaps only** toggle (year view) hides every year you've already covered, so it doubles as a "what should I watch next" list.
 - **Rich tooltips.** Hover a poster to see its title, year and star rating. Hover a year to see how you rated that year's films.
 - **Real posters.** Artwork is fetched from TMDB and fills in progressively as results arrive. Every lookup is cached, so later visits are instant.
 - **Remembers your list.** Your library stays in the browser between visits, so you upload once.
@@ -38,21 +39,27 @@
 
 ### 1. Export your data from Letterboxd
 
-On Letterboxd, go to **Settings → Data → Export your data**. You'll get a `.zip`; unzip it and find `watched.csv` and `ratings.csv`. Optionally add `watchlist.csv` too: years with no watched films then list your watchlist films from that year as dimmed "ghost" posters, and a **Gaps only** toggle (year view) hides every year you've already covered.
+1. Sign in to Letterboxd and open **[Settings → Data](https://letterboxd.com/settings/data/)**.
+2. Click **Export your data**. Letterboxd prepares a `.zip` and downloads it.
+3. Unzip it. You need `watched.csv` and `ratings.csv`. `watchlist.csv` is optional but recommended (see [Features](#-features)).
+
+<p align="center">
+  <img src="docs/screenshots/letterboxd-export.jpg" alt="Letterboxd's Settings → Data page with the Export your data button" width="520" />
+</p>
 
 > Don't have a Letterboxd account handy? Use the sample exports in [`example-data/`](example-data/).
 
-### 2. Upload both files
+### 2. Upload your files
 
-Open the [app](https://letterboxd-top-of-the-year.vercel.app/), pick `watched.csv` and `ratings.csv`, and hit **Visualize my data**.
+Open the [app](https://letterboxd-top-of-the-year.vercel.app/), pick `watched.csv` and `ratings.csv` (and `watchlist.csv` if you have it), and hit **Visualize my data**.
 
 <p align="center">
-  <img src="docs/screenshots/upload.jpg" alt="Upload screen with watched.csv and ratings.csv selected" width="560" />
+  <img src="docs/screenshots/upload.jpg" alt="Upload screen with watched.csv, ratings.csv and watchlist.csv selected" width="560" />
 </p>
 
 ### 3. Explore
 
-Scroll through the rows, swipe each one sideways, and switch between **By Year** and **By Decade** at the top.
+Scroll through the rows, swipe each one sideways, and switch between **By Year** and **By Decade** at the top. **Gaps only** (year view) narrows the wall to the years you haven't watched anything from.
 
 <table>
   <tr>
@@ -72,7 +79,19 @@ Scroll through the rows, swipe each one sideways, and switch between **By Year**
 <p align="center">
   <img src="docs/screenshots/histogram-tooltip.jpg" alt="Hovering a histogram bar shows the year and how many films it has" width="900" />
   <br />
-  <sub><b>Histogram</b>: hover a bar for the year and its film count; click it to scroll to that row.</sub>
+  <sub><b>Year histogram</b>: hover a bar for the year and its film count; click it to scroll to that row.</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/decade-hover.jpg" alt="In decade view, hovering a bar shows its film count above it" width="900" />
+  <br />
+  <sub><b>Decade histogram</b>: milestone lines at 10, 50, 100, ... and the count revealed above the hovered bar.</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/gaps-only.jpg" alt="Gaps only view: years with no watched films show watchlist films as dimmed ghost posters" width="900" />
+  <br />
+  <sub><b>Gaps only</b>: years with nothing watched, filled with dimmed posters from your watchlist.</sub>
 </p>
 
 <table>
@@ -97,19 +116,19 @@ Scroll through the rows, swipe each one sideways, and switch between **By Year**
 ## 🛠 How it works
 
 ```text
-watched.csv ─┐
-             ├─▶ csv.ts ──▶ storage.ts ──▶ group.ts ──▶ React UI
-ratings.csv ─┘   parse &     localStorage   bucket by       │
-                 merge by    cache          year / decade,  │ title + year
-                 Letterboxd                 sort by rating  ▼
-                 URI                                     tmdb.ts ──▶ /api/tmdb ──▶ TMDB
-                                                         (cached,     (serverless proxy,
-                                                          8 at once)   holds the API key)
+watched.csv   ─┐
+ratings.csv   ─┼─▶ csv.ts ──▶ storage.ts ──▶ group.ts ──▶ React UI
+watchlist.csv ─┘   parse &     localStorage   bucket by       │
+(optional)         merge by    cache          year / decade,  │ title + year
+                   Letterboxd                 sort by rating  ▼
+                   URI                                     tmdb.ts ──▶ /api/tmdb ──▶ TMDB
+                                                           (cached,     (serverless proxy,
+                                                            8 at once)   holds the API key)
 ```
 
-1. **Parse & merge** (`src/lib/csv.ts`): both exports are parsed with PapaParse and joined on the `Letterboxd URI`. `watched.csv` is the master list; `ratings.csv` adds the scores.
+1. **Parse & merge** (`src/lib/csv.ts`): both exports are parsed with PapaParse and joined on the `Letterboxd URI`. `watched.csv` is the master list; `ratings.csv` adds the scores. The optional `watchlist.csv` is parsed separately, minus films you've already watched.
 2. **Persist** (`src/lib/storage.ts`): the merged list is saved to `localStorage`. Posters are not stored with it; they're re-resolved from the poster cache on load.
-3. **Group** (`src/lib/group.ts`): films are bucketed by year or decade, empty years in between are filled in, and each group is sorted by rating.
+3. **Group** (`src/lib/group.ts`): films are bucketed by year or decade, empty years in between are filled in, and each group is sorted by rating. Watchlist films are attached per group but never widen the range, so a stray old entry can't add dozens of empty rows.
 4. **Posters** (`src/lib/tmdb.ts`): looked up through the `/api/tmdb` proxy with bounded concurrency, filling cards in as they resolve. Every result, misses included, is cached.
 5. **Proxy** (`api/tmdb.js`): a Vercel Function that signs requests with a server-side `TMDB_API_KEY`, so the key is never shipped to the browser. It only allows TMDB's movie and TV search endpoints.
 

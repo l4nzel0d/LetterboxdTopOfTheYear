@@ -19,8 +19,10 @@ export function UploadScreen({ onSubmit }: Props) {
       <div className="upload-card">
         <h1>Top of the Year</h1>
         <p className="upload-sub">
-          Upload your Letterboxd exports to browse every film you've watched,
-          grouped by year or decade and sorted by your rating within each group.
+          Upload your Letterboxd exports to see which decade you watched the
+          most, find your highest-rated films from any year, and spot the gaps
+          in the history of your watches. Add your watchlist to fill those gaps with films to
+          watch next.
         </p>
 
         <div className="upload-fields">
@@ -82,7 +84,7 @@ function FilePicker({
         }}
       />
       <span className="file-label">{label}</span>
-      <span className="file-name">{file ? file.name : optional ? 'Optional: fills empty years' : 'Choose file…'}</span>
+      <span className="file-name">{file ? file.name : optional ? 'Optional: fills gap years' : 'Choose file…'}</span>
     </label>
   )
 }
