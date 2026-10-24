@@ -11,3 +11,6 @@ dist-ssr
 
 # Local design references
 refs/
+
+# Generated /brag launch-video output
+brag-output*/
