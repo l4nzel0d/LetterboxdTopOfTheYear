@@ -1,3 +1,18 @@
+/* Outfit: used only for the decade graph's count and bar labels. */
+@font-face {
+  font-family: 'Outfit';
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/Outfit-700.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Outfit';
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/Outfit-800.ttf') format('truetype');
+}
+
 :root {
   --bg: #14181c;
   --bg-raised: #1c2228;
@@ -377,6 +392,7 @@ body {
   left: 50%;
   transform: translateX(-50%);
   padding-bottom: 4px;
+  font-family: 'Outfit', sans-serif;
   font-size: 18px;
   font-weight: 800;
   color: var(--text-dim);
@@ -386,6 +402,7 @@ body {
 
 .hist-col:hover .hist-count {
   opacity: 1;
+  color: var(--green);
 }
 
 /* Axis area below the bars; holds decade ticks + rotated year labels.
@@ -412,7 +429,9 @@ body {
 .histogram.is-decade .hist-tick-label {
   left: 50%;
   transform: translateX(-50%);
+  font-family: 'Outfit', sans-serif;
   font-size: 14px;
+  font-weight: 700;
 }
 
 .hist-tooltip {
