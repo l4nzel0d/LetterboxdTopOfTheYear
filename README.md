@@ -33,7 +33,7 @@ https://github.com/user-attachments/assets/eaef62e4-f6df-4ec2-b2e2-c5d56160f11b
 - **Year or decade view.** Every film you've logged on Letterboxd goes into a row for its release year or decade, newest first. Years with nothing in them between your oldest and newest film still show up, so gaps in your history are visible.
 - **Your favourites first.** Each row is sorted by your rating, highest first. Unrated films go last, and ties are broken alphabetically.
 - **Interactive histogram.** A bar chart of films per year or decade sits at the top, with dashed milestone lines (every 10 films by year; 10, 50, 100, ... by decade) so bar heights are easy to read. Hover a year bar for a tooltip, or a decade bar to see its count; click either to jump to that row.
-- **Watchlist fills the gaps.** Add your `watchlist.csv` and years in which you haven't watched anything show films from your watchlist as dimmed "ghost" posters. A **Gaps only** toggle (year view) hides every year you've already covered, so it doubles as a "what should I watch next" list.
+- **Watchlist fills the gaps.** Your export's `watchlist.csv` is picked up automatically, and years in which you haven't watched anything show films from your watchlist as dimmed "ghost" posters. A **Gaps only** toggle (year view) hides every year you've already covered, so it doubles as a "what should I watch next" list.
 - **Rich tooltips.** Hover a poster to see its title, year and star rating. Hover a year to see how you rated that year's films.
 - **Real posters.** Artwork is fetched from TMDB and fills in progressively as results arrive. Every lookup is cached, so later visits are instant.
 - **Remembers your list.** Your library stays in the browser between visits, so you upload once.
@@ -45,7 +45,7 @@ https://github.com/user-attachments/assets/eaef62e4-f6df-4ec2-b2e2-c5d56160f11b
 
 1. Sign in to Letterboxd and open **[Settings → Data](https://letterboxd.com/settings/data/)**.
 2. Click **Export your data**. Letterboxd prepares a `.zip` and downloads it.
-3. Unzip it. You need `watched.csv` and `ratings.csv`. `watchlist.csv` is optional but recommended (see [Features](#-features)).
+3. Keep the `.zip` as it is. No need to unzip it.
 
 <p align="center">
   <img src="docs/screenshots/letterboxd-export.jpg" alt="Letterboxd's Settings → Data page with the Export your data button" width="520" />
@@ -53,9 +53,9 @@ https://github.com/user-attachments/assets/eaef62e4-f6df-4ec2-b2e2-c5d56160f11b
 
 > Don't have a Letterboxd account handy? Use the sample exports in [`example-data/`](example-data/).
 
-### 2. Upload your files
+### 2. Upload your export
 
-Open the [app](https://letterboxd-top-of-the-year.vercel.app/), pick `watched.csv` and `ratings.csv` (and `watchlist.csv` if you have it), and hit **Visualize my data**.
+Open the [app](https://letterboxd-top-of-the-year.vercel.app/) and drop the `.zip` onto the upload box (or click it to choose the file). The app reads `watched.csv`, `ratings.csv` and `watchlist.csv` out of the zip in your browser.
 
 <p align="center">
   <img src="docs/screenshots/upload.jpg" alt="Upload screen with watched.csv, ratings.csv and watchlist.csv selected" width="560" />

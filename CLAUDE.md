@@ -22,6 +22,7 @@ A Vite + React 18 + TypeScript SPA that turns two Letterboxd CSV exports into a 
 
 Data flows in one direction through `src/lib/`, then into components:
 
+0. **`lib/zip.ts` — `extractExport(zip)`**: the upload screen takes only the Letterboxd export `.zip` (no individual CSV pickers). fflate's async `unzip` with a `filter` inflates only `watched.csv`, `ratings.csv` and `watchlist.csv` (matched by basename, shallowest wins, `__MACOSX/` and `lists/` ignored) and returns them as `File`s for the steps below. Missing `watched.csv` throws; missing `ratings.csv` becomes an empty file; missing `watchlist.csv` is `null`.
 1. **`lib/csv.ts` — `buildMovies(watched, ratings)`**: Parses both Letterboxd CSVs (PapaParse) and merges them by `Letterboxd URI` (the unique join key). `watched.csv` is the master list; `ratings.csv` only contributes a score. Films present only in ratings are still kept. Produces `Movie[]`.
 2. **`lib/storage.ts`**: Persists the `Movie[]` to `localStorage` (`movies:v1`) so reloads skip the upload screen. **Posters are deliberately stored as `null`** — they re-resolve from the TMDB cache on load to keep the payload small.
 3. **`lib/group.ts` — `groupMovies(movies, mode)`**: Buckets by year or decade and **gap-fills** every year/decade between the min and max film year (so empty groups render too). Bounding to actual film years guarantees the first and last groups are non-empty. Within a group, sorted by rating desc, unrated last, then alphabetical. Returns newest-first.

@@ -79,12 +79,6 @@ body {
   font-size: 14px;
 }
 
-.upload-fields {
-  display: grid;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
 .file-picker {
   display: flex;
   align-items: center;
@@ -102,7 +96,7 @@ body {
   border-color: var(--accent);
 }
 
-.file-picker.picked {
+.file-picker.dragging {
   border-style: solid;
   border-color: var(--green);
 }
@@ -111,37 +105,23 @@ body {
   display: none;
 }
 
-.file-label {
+.drop-zone {
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 36px 16px;
+  text-align: center;
+}
+
+.drop-title {
   font-weight: 600;
-  font-size: 13px;
-  min-width: 96px;
+  font-size: 15px;
   color: var(--text);
 }
 
 .file-name {
   font-size: 13px;
   color: var(--text-dim);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.upload-go {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: var(--radius);
-  background: var(--green);
-  color: #04121d;
-  font-weight: 700;
-  font-size: 15px;
-  cursor: pointer;
-}
-
-.upload-go:disabled {
-  background: var(--bg-card);
-  color: var(--text-faint);
-  cursor: not-allowed;
 }
 
 /* ---------- Toasts (bottom-right stack, portalled to body) ---------- */
