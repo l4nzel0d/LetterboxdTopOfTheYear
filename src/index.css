@@ -434,6 +434,10 @@ body {
   font-weight: 700;
 }
 
+.histogram.is-decade .hist-col:hover .hist-tick-label {
+  color: var(--green);
+}
+
 .hist-tooltip {
   position: fixed;
   width: max-content;
